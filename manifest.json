@@ -1,0 +1,11 @@
+{
+  "name": "モルック スコアボード",
+  "short_name": "モルック",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f5f4",
+  "theme_color": "#78350f",
+  "icons": []
+}
