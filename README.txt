@@ -1,19 +1,19 @@
-# モルック スコアボード PWA
+GitHub Pages PWA版 モルック スコアボード
 
-GitHub Pages用のPWA構成です。
+ルートに以下を配置:
+index.html
+manifest.json
+sw.js
+icons/icon-192.png
+icons/icon-512.png
+icons/apple-touch-icon.png
 
-## ファイル
-- index.html
-- manifest.json
-- sw.js
+重要:
+以前作ったホーム画面ショートカットは削除してください。
+その後、Chromeで公開URLを直接開き、ページを再読み込みしてください。
+Chromeメニューに「アプリをインストール」が出る場合はこちらを使用してください。
+「ホーム画面に追加」しか出ない場合は、PWAとして認識されていないため、
+Chromeのサイト情報/インストール状態を確認してください。
 
-## GitHub Pages
-この3ファイルを同じ階層に配置し、GitHub Pagesを有効化してください。
-
-## Android
-1. ChromeでGitHub PagesのURLを開く
-2. ページを一度読み込む
-3. Chromeメニューから「ホーム画面に追加」または「アプリをインストール」
-4. ホーム画面から「モルック」を起動
-
-※既に以前のショートカットを作成している場合は、一度削除してから再追加してください。
+GitHub Pagesが https://ユーザー名.github.io/リポジトリ名/ の場合でも、
+manifestのstart_urlとscopeは相対指定なので対応できます。
