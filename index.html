@@ -2,8 +2,16 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>モルック スコアボード</title>
+  
+  <!-- アプリ風（全画面表示）にするための設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="モルック">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#78350f">
+
   <style>
     /* ベーススタイル */
     * {
@@ -36,6 +44,7 @@
       background-color: #78350f;
       color: #fef3c7;
       padding: 12px 16px;
+      padding-top: max(12px, env(safe-area-inset-top)); /* iPhoneのノッチ対策 */
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -726,8 +735,8 @@
     let currentGameId = savedGameState ? (savedGameState.currentGameId || Date.now().toString()) : Date.now().toString();
     let activePlayerIds = savedGameState ? savedGameState.activePlayerIds : ['1', '2', '3'];
     let currentTurnIndex = savedGameState ? savedGameState.currentTurnIndex : 0;
-    let history = savedGameState ? savedGameState.history : []; // [{ playerId, skittles: [], isMiss: boolean }]
-    
+    let history = savedGameState ? savedGameState.history : [];
+
     let gameRecords = loadFromStorage(STORAGE_KEY_RECORDS, []);
 
     let selectedSkittles = [];
@@ -1138,7 +1147,7 @@
     }
 
     function applyMemberChanges() {
-      currentGameId = Date.now().toString(); // 新しいゲームIDを発行
+      currentGameId = Date.now().toString();
       history = [];
       currentTurnIndex = 0;
       selectedSkittles = [];
@@ -1248,7 +1257,7 @@
       }
     }
 
-    // --- ダウンロード処理 (画像/CSV) ---
+    // --- ダウンロード処理 ---
     function downloadCurrentScorecard(format) {
       const playerStats = calculateGameState();
       const title = `モルック対戦成績 (${new Date().toLocaleDateString('ja-JP')})`;
@@ -1270,14 +1279,13 @@
       }
     }
 
-    // CSVダウンロード実装
     function exportToCSV(playerStats, title) {
       let maxTurns = 5;
       playerStats.forEach(p => {
         if (p.turns && p.turns.length > maxTurns) maxTurns = p.turns.length;
       });
 
-      let csvStr = '\uFEFF'; // UTF-8 BOM
+      let csvStr = '\uFEFF';
       csvStr += `"${title}"\n\n`;
 
       let header = ['"プレイヤー"'];
@@ -1311,7 +1319,6 @@
       showToast('CSVファイルをダウンロードしました');
     }
 
-    // 画像 (PNG) 生成＆モーダルプレビュー表示実装
     function exportToImage(playerStats, title) {
       let maxTurns = 5;
       playerStats.forEach(p => {
@@ -1333,11 +1340,9 @@
       canvas.height = canvasHeight;
       const ctx = canvas.getContext('2d');
 
-      // 背景
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      // タイトルヘッダー
       ctx.fillStyle = '#78350f';
       ctx.fillRect(padding, padding, canvasWidth - padding * 2, 40);
 
@@ -1349,14 +1354,12 @@
       const startX = padding;
       const startY = padding + 50;
 
-      // ヘッダー背景
       ctx.fillStyle = '#f5f5f4';
       ctx.fillRect(startX, startY, canvasWidth - padding * 2, rowHeight);
 
       ctx.strokeStyle = '#d6d3d1';
       ctx.lineWidth = 1;
 
-      // ヘッダーテキスト
       ctx.fillStyle = '#44403c';
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'center';
@@ -1369,7 +1372,6 @@
 
       ctx.strokeRect(startX, startY, canvasWidth - padding * 2, rowHeight);
 
-      // 行データ描画
       playerStats.forEach((p, rIdx) => {
         const currY = startY + (rIdx + 1) * rowHeight;
 
@@ -1421,7 +1423,6 @@
         ctx.strokeRect(startX + nameWidth + (maxTurns * cellWidth), currY, totalWidth, rowHeight);
       });
 
-      // Data URL化してプレビューモーダルに表示
       const imageURI = canvas.toDataURL('image/png');
       document.getElementById('previewImageTag').src = imageURI;
       
@@ -1431,7 +1432,6 @@
 
       openModal('imagePreviewModal');
 
-      // PC向けに自動ダウンロードも念のためトリガー
       try {
         const link = document.createElement('a');
         link.download = `molkky_scorecard_${Date.now()}.png`;
@@ -1477,7 +1477,6 @@
         status: p.status
       }));
 
-      // 重複チェック＆ゲームIDによる上書き・新規保存制御
       const existingIdx = gameRecords.findIndex(r => r.gameId === currentGameId);
       const recordData = {
         gameId: currentGameId,
@@ -1488,10 +1487,8 @@
       };
 
       if (existingIdx >= 0) {
-        // 修正等で同じゲームの再計算が行われた場合は上書き
         gameRecords[existingIdx] = recordData;
       } else {
-        // 新しいゲーム結果は先頭に追加
         gameRecords.unshift(recordData);
       }
       
@@ -1512,4 +1509,3 @@
   </script>
 </body>
 </html>
-
