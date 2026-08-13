@@ -2,10 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>モルック スコアボード</title>
   
-  <!-- アプリ風（全画面表示）にするための設定 -->
+  <!-- 全画面アプリ化（PWA）用設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="モルック">
@@ -27,6 +27,9 @@
       display: flex;
       justify-content: center;
       min-height: 100vh;
+      /* 全画面起動時のセーフエリア（ノッチ等）対策 */
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
     }
     .app-container {
       width: 100%;
@@ -44,7 +47,6 @@
       background-color: #78350f;
       color: #fef3c7;
       padding: 12px 16px;
-      padding-top: max(12px, env(safe-area-inset-top)); /* iPhoneのノッチ対策 */
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -708,13 +710,11 @@
 
   <!-- アプリケーション・ロジック -->
   <script>
-    // --- ローカルストレージ キー ---
     const STORAGE_KEY_SETTINGS = 'molkky_settings';
     const STORAGE_KEY_MEMBERS = 'molkky_members';
     const STORAGE_KEY_GAME_STATE = 'molkky_game_state';
     const STORAGE_KEY_RECORDS = 'molkky_game_records';
 
-    // --- デフォルト値 ---
     const DEFAULT_SETTINGS = {
       targetScore: 50,
       burstReturnScore: 25,
@@ -727,7 +727,6 @@
       { id: '3', name: 'プレイヤー3' }
     ];
 
-    // --- アプリ状態 ---
     let settings = loadFromStorage(STORAGE_KEY_SETTINGS, DEFAULT_SETTINGS);
     let members = loadFromStorage(STORAGE_KEY_MEMBERS, DEFAULT_MEMBERS);
     
@@ -743,7 +742,6 @@
     let editingHistoryIndex = -1;
     let editSkittles = [];
 
-    // --- ストレージヘルパー ---
     function loadFromStorage(key, fallback) {
       try {
         const item = localStorage.getItem(key);
@@ -770,7 +768,6 @@
       });
     }
 
-    // --- 初期化 ---
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('inputTargetScore').value = settings.targetScore;
       document.getElementById('inputBurstReturn').value = settings.burstReturnScore;
@@ -779,7 +776,6 @@
       renderAll();
     });
 
-    // --- スコア計算 ---
     function calculateGameState() {
       const playerStats = activePlayerIds.map(id => {
         const m = members.find(mem => mem.id === id);
@@ -858,11 +854,9 @@
       return startIndex % total;
     }
 
-    // --- レンダリング・UI更新 ---
     function renderAll() {
       const playerStats = calculateGameState();
 
-      // 全員終了チェック
       const playingPlayers = playerStats.filter(p => p.status === 'playing');
       if (playingPlayers.length === 0 && activePlayerIds.length > 0 && history.length > 0) {
         showGameOverDialog(playerStats);
@@ -872,7 +866,6 @@
 
       saveCurrentGameState();
 
-      // 現在のターンプレイヤーUI更新
       const currPId = activePlayerIds[currentTurnIndex];
       const currStat = playerStats.find(p => p.id === currPId) || { name: 'なし', score: 0, consecutiveMisses: 0 };
       
@@ -883,7 +876,6 @@
       document.getElementById('remainPoints').innerText = Math.max(0, settings.targetScore - currStat.score);
       document.getElementById('targetScoreDisplay').innerText = settings.targetScore;
 
-      // プレビュー表示
       let previewVal = 0;
       if (selectedSkittles.length === 1) previewVal = selectedSkittles[0];
       else if (selectedSkittles.length > 1) previewVal = selectedSkittles.length;
@@ -892,7 +884,6 @@
       document.getElementById('btnClear').disabled = selectedSkittles.length === 0;
       document.getElementById('btnSubmit').disabled = selectedSkittles.length === 0;
 
-      // スキットル選択状態
       document.querySelectorAll('#skittleGrid .skittle-btn').forEach(btn => {
         const val = parseInt(btn.innerText);
         if (selectedSkittles.includes(val)) {
@@ -953,7 +944,6 @@
       document.getElementById('tableBody').innerHTML = tbHTML;
     }
 
-    // --- ピン選択操作 ---
     function toggleSkittle(num) {
       if (selectedSkittles.includes(num)) {
         selectedSkittles = selectedSkittles.filter(n => n !== num);
@@ -968,7 +958,6 @@
       renderAll();
     }
 
-    // --- 投球確定 ---
     function submitTurn(isMiss) {
       const playerStats = calculateGameState();
       const currPId = activePlayerIds[currentTurnIndex];
@@ -1015,7 +1004,6 @@
       }
     }
 
-    // --- セル修正モーダル ---
     function openEditCellModal(historyIndex) {
       editingHistoryIndex = historyIndex;
       const entry = history[historyIndex];
@@ -1071,7 +1059,6 @@
       showToast('投球データを削除しました');
     }
 
-    // --- メンバー管理 ---
     function renderMemberList() {
       let html = '';
       members.forEach(m => {
@@ -1156,7 +1143,6 @@
       showToast('新しいゲームを開始しました');
     }
 
-    // --- ルール設定 ---
     function saveSettings() {
       settings.targetScore = parseInt(document.getElementById('inputTargetScore').value) || 50;
       settings.burstReturnScore = parseInt(document.getElementById('inputBurstReturn').value) || 25;
@@ -1168,7 +1154,6 @@
       showToast('ルール設定を保存しました');
     }
 
-    // --- 過去対戦記録機能 ---
     function renderGameRecords() {
       const listEl = document.getElementById('recordsList');
       if (gameRecords.length === 0) {
@@ -1257,7 +1242,6 @@
       }
     }
 
-    // --- ダウンロード処理 ---
     function downloadCurrentScorecard(format) {
       const playerStats = calculateGameState();
       const title = `モルック対戦成績 (${new Date().toLocaleDateString('ja-JP')})`;
@@ -1444,7 +1428,6 @@
       }
     }
 
-    // --- ダイアログ & モーダルヘルパー ---
     function openModal(id) {
       if (id === 'membersModal') renderMemberList();
       if (id === 'recordsModal') renderGameRecords();
