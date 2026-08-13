@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>モルック スコアボード</title>
+  <style>
+    /* ベーススタイル */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      touch-action: manipulation;
+    }
+    body {
+      background-color: #f5f5f4;
+      color: #292524;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      background-color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    /* ヘッダー */
+    header {
+      background-color: #78350f;
+      color: #fef3c7;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header-title {
+      font-weight: 800;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .icon-btn {
+      background-color: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .icon-btn:active {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* メインコンテンツ */
+    main {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    /* 現在のプレイヤーカード */
+    .player-card {
+      background: linear-gradient(135deg, #78350f 0%, #451a03 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(120, 53, 15, 0.2);
+    }
+    .player-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .badge {
+      background-color: rgba(251, 191, 36, 0.2);
+      color: #fde68a;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+    .miss-count {
+      font-size: 0.75rem;
+      color: #fde68a;
+    }
+    .player-card-body {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .player-name {
+      font-size: 1.4rem;
+      font-weight: 900;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .score-display {
+      text-align: right;
+    }
+    .current-score {
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .target-score-label {
+      font-size: 0.8rem;
+      color: #fde68a;
+    }
+
+    /* ピン入力セクション */
+    .pin-section {
+      background: white;
+      border: 1px solid #e7e5e4;
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .preview-bar {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f5f5f4;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+    .preview-title {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #78716c;
+    }
+    .preview-score-val {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #b45309;
+    }
+
+    /* スキットル配置 */
+    .skittle-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .skittle-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    .skittle-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid #d6d3d1;
+      background-color: #f5f5f4;
+      color: #44403c;
+      font-weight: 900;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .skittle-btn.selected {
+      background-color: #d97706;
+      color: white;
+      border-color: #b45309;
+      transform: scale(1.08);
+      box-shadow: 0 4px 8px rgba(217, 119, 6, 0.4);
+    }
+    .skittle-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 入力アクションボタン */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1.5fr;
+      gap: 8px;
+      width: 100%;
+      margin-top: 12px;
+    }
+    .btn {
+      padding: 12px 0;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-clear {
+      background-color: #e7e5e4;
+      color: #44403c;
+    }
+    .btn-miss {
+      background-color: #ffe4e6;
+      color: #e11d48;
+      border: 1px solid #fecdd3;
+    }
+    .btn-submit {
+      background-color: #d97706;
+      color: white;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);
+    }
+    .btn-small {
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      border-radius: 6px;
+      font-weight: bold;
+      border: 1px solid #d6d3d1;
+      background-color: #f5f5f4;
+      color: #44403c;
+      cursor: pointer;
+    }
+
+    /* スコアカードテーブル */
+    .scorecard-section {
+      background: white;
+      border: 1px solid #e7e5e4;
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .scorecard-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .scorecard-title {
+      font-size: 0.8rem;
+      font-weight: 900;
+      color: #44403c;
+    }
+    .download-btns {
+      display: flex;
+      gap: 4px;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e7e5e4;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.75rem;
+      text-align: center;
+      min-width: 300px;
+    }
+    th, td {
+      padding: 8px 4px;
+      border-right: 1px solid #f5f5f4;
+      border-bottom: 1px solid #f5f5f4;
+    }
+    th {
+      background-color: #f5f5f4;
+      color: #78716c;
+      font-weight: 800;
+    }
+    .sticky-col {
+      position: sticky;
+      left: 0;
+      background-color: white;
+      z-index: 5;
+      text-align: left;
+      padding-left: 8px;
+      font-weight: 900;
+      border-right: 2px solid #e7e5e4;
+      min-width: 90px;
+      max-width: 90px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    tr.active-row .sticky-col {
+      background-color: #fef3c7;
+      color: #78350f;
+    }
+    tr.active-row {
+      background-color: #fffbeb;
+    }
+    .cell-clickable {
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .cell-clickable:hover {
+      background-color: #fef3c7;
+    }
+    .cell-miss {
+      color: #e11d48;
+      background-color: #fff1f2;
+    }
+    .total-cell {
+      font-weight: 900;
+      background-color: #fef3c7;
+      color: #78350f;
+    }
+    .remain-cell {
+      color: #78716c;
+      background-color: #fafaf9;
+    }
+
+    /* モーダル & ダイアログ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-box {
+      background: white;
+      border-radius: 24px;
+      padding: 20px;
+      width: 100%;
+      max-width: 340px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+    .modal-msg {
+      font-size: 0.85rem;
+      color: #57534e;
+      margin-bottom: 16px;
+      font-weight: bold;
+      white-space: pre-wrap;
+    }
+
+    /* フォーム・プレイヤーリスト */
+    .form-group {
+      text-align: left;
+      margin-bottom: 12px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #44403c;
+      margin-bottom: 4px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #d6d3d1;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .member-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border: 1px solid #e7e5e4;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      background-color: #fafaf9;
+    }
+
+    /* トースト */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(28, 25, 23, 0.9);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      z-index: 60;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* 過去結果リスト */
+    .history-card {
+      background-color: #fafaf9;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+      text-align: left;
+      font-size: 0.8rem;
+    }
+    .history-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e7e5e4;
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #78350f;
+    }
+    .history-scorecard-toggle {
+      background: none;
+      border: none;
+      color: #b45309;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    /* 画像プレビューモーダル */
+    .img-preview-container {
+      margin: 12px 0;
+      max-height: 60vh;
+      overflow-y: auto;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+      padding: 8px;
+      background-color: #fafaf9;
+    }
+    .img-preview-container img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- ヘッダー -->
+    <header>
+      <div class="header-title">
+        <span>🪵</span>
+        <span>モルック スコア</span>
+      </div>
+      <div class="header-btns">
+        <button class="icon-btn" onclick="openModal('recordsModal')">📜 履歴</button>
+        <button class="icon-btn" onclick="openModal('membersModal')">👥 メンバー</button>
+        <button class="icon-btn" onclick="openModal('settingsModal')">⚙️ 設定</button>
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main>
+
+      <!-- 現在のプレイヤー表示 -->
+      <div class="player-card">
+        <div class="player-card-header">
+          <span class="badge" id="turnBadge">投球者 #1</span>
+          <span class="miss-count" id="missBadge">ミス: 0/3</span>
+        </div>
+        <div class="player-card-body">
+          <div class="player-name" id="currentPlayerName">プレイヤー1</div>
+          <div class="score-display">
+            <div class="target-score-label">残り <span id="remainPoints">50</span> 点</div>
+            <div>
+              <span class="current-score" id="currentScore">0</span>
+              <span style="font-size: 0.9rem; color: #fde68a;"> / <span id="targetScoreDisplay">50</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- スキットル選択領域 -->
+      <div class="pin-section">
+        <div class="preview-bar">
+          <span class="preview-title">🎯 倒したピンを選択</span>
+          <div>
+            <span style="font-size:0.75rem; color:#78716c; font-weight:bold;">獲得: </span>
+            <span class="preview-score-val" id="previewScore">+0</span>
+            <span style="font-size:0.75rem; font-weight:bold; color:#78716c;"> 点</span>
+          </div>
+        </div>
+
+        <!-- スキットルボタン (公式レイアウト) -->
+        <div class="skittle-grid" id="skittleGrid">
+          <div class="skittle-row">
+            <button class="skittle-btn" onclick="toggleSkittle(7)">7</button>
+            <button class="skittle-btn" onclick="toggleSkittle(8)">8</button>
+            <button class="skittle-btn" onclick="toggleSkittle(9)">9</button>
+          </div>
+          <div class="skittle-row">
+            <button class="skittle-btn" onclick="toggleSkittle(5)">5</button>
+            <button class="skittle-btn" onclick="toggleSkittle(11)">11</button>
+            <button class="skittle-btn" onclick="toggleSkittle(12)">12</button>
+            <button class="skittle-btn" onclick="toggleSkittle(6)">6</button>
+          </div>
+          <div class="skittle-row">
+            <button class="skittle-btn" onclick="toggleSkittle(3)">3</button>
+            <button class="skittle-btn" onclick="toggleSkittle(10)">10</button>
+            <button class="skittle-btn" onclick="toggleSkittle(4)">4</button>
+          </div>
+          <div class="skittle-row">
+            <button class="skittle-btn" onclick="toggleSkittle(1)">1</button>
+            <button class="skittle-btn" onclick="toggleSkittle(2)">2</button>
+          </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="action-grid">
+          <button class="btn btn-clear" id="btnClear" onclick="clearSkittles()" disabled>クリア</button>
+          <button class="btn btn-miss" onclick="submitTurn(true)">❌ ミス</button>
+          <button class="btn btn-submit" id="btnSubmit" onclick="submitTurn(false)" disabled>決定</button>
+        </div>
+      </div>
+
+      <!-- スコアカード -->
+      <div class="scorecard-section">
+        <div class="scorecard-header-bar">
+          <div class="scorecard-title">📊 スコアカード</div>
+          <div class="download-btns">
+            <button class="btn-small" onclick="downloadCurrentScorecard('image')" title="画像(PNG)で保存">🖼️ 画像</button>
+            <button class="btn-small" onclick="downloadCurrentScorecard('csv')" title="CSVファイルで保存">📄 CSV</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr id="tableHeader">
+                <th class="sticky-col">プレイヤー</th>
+                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+                <th>合計</th>
+                <th>残り</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- JSで動的生成 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- トースト通知 -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ダイアログ (通知系) -->
+  <div class="modal-overlay" id="alertDialog">
+    <div class="modal-box">
+      <div id="alertEmoji" style="font-size: 3rem; margin-bottom: 8px;">💥</div>
+      <div class="modal-title" id="alertTitle">BURST!</div>
+      <div class="modal-msg" id="alertMsg">点数がオーバーしました。</div>
+      <button class="btn btn-submit" style="width: 100%;" onclick="closeModal('alertDialog')">OK</button>
+    </div>
+  </div>
+
+  <!-- 画像保存・プレビュー表示モーダル -->
+  <div class="modal-overlay" id="imagePreviewModal">
+    <div class="modal-box" style="max-width: 360px;">
+      <div class="modal-title">🖼️ スコアカード画像</div>
+      <div style="font-size: 0.75rem; color: #78716c; margin-bottom: 6px;">
+        スマホの場合は、以下の画像を<strong>長押し</strong>して「写真に保存」または「共有」を行ってください。
+      </div>
+      <div class="img-preview-container">
+        <img id="previewImageTag" src="" alt="Scorecard Preview">
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <a id="directDownloadLink" class="btn btn-submit" style="flex: 1; text-decoration: none; display: flex; align-items: center; justify-content: center;" download="molkky_scorecard.png">
+          📥 画像ダウンロード
+        </a>
+        <button class="btn btn-clear" style="padding: 0 16px;" onclick="closeModal('imagePreviewModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ルール設定モーダル -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-box" style="text-align: left;">
+      <div class="modal-title" style="text-align: center;">⚙️ ルール設定</div>
+      <div class="form-group">
+        <label>目標点数</label>
+        <input type="number" id="inputTargetScore" class="form-control" value="50">
+      </div>
+      <div class="form-group">
+        <label>バースト時の戻り点</label>
+        <input type="number" id="inputBurstReturn" class="form-control" value="25">
+      </div>
+      <div class="form-group">
+        <label>連続ミス失格回数</label>
+        <input type="number" id="inputMaxMisses" class="form-control" value="3">
+      </div>
+      <button class="btn btn-submit" style="width: 100%; margin-top: 8px;" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+
+  <!-- メンバー＆投球順設定モーダル -->
+  <div class="modal-overlay" id="membersModal">
+    <div class="modal-box" style="text-align: left; max-height: 80vh; display: flex; flex-direction: column;">
+      <div class="modal-title" style="text-align: center;">👥 プレイヤー管理</div>
+      
+      <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+        <input type="text" id="newMemberName" class="form-control" placeholder="新規メンバー名">
+        <button class="btn btn-submit" style="padding: 8px 12px; white-space: nowrap;" onclick="addMember()">追加</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.75rem; font-weight: bold; color: #78716c;">参加選択 & 順番</span>
+        <button onclick="shuffleOrder()" style="background: none; border: none; color: #b45309; font-weight: bold; font-size: 0.75rem; cursor: pointer;">🎲 シャッフル</button>
+      </div>
+
+      <div id="memberList" style="flex: 1; overflow-y: auto; margin-bottom: 12px;">
+        <!-- JS生成 -->
+      </div>
+
+      <button class="btn btn-submit" style="width: 100%;" onclick="applyMemberChanges()">このメンバーで新ゲーム開始</button>
+    </div>
+  </div>
+
+  <!-- 過去の勝敗対戦履歴モーダル -->
+  <div class="modal-overlay" id="recordsModal">
+    <div class="modal-box" style="text-align: left; max-height: 80vh; display: flex; flex-direction: column; max-width: 380px;">
+      <div class="modal-title" style="text-align: center;">📜 過去の対戦結果</div>
+      <div id="recordsList" style="flex: 1; overflow-y: auto; margin-bottom: 12px; padding-right:2px;">
+        <!-- JS生成 -->
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <button class="btn btn-clear" onclick="clearGameRecords()">履歴クリア</button>
+        <button class="btn btn-submit" onclick="closeModal('recordsModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- セル修正モーダル -->
+  <div class="modal-overlay" id="editCellModal">
+    <div class="modal-box">
+      <div class="modal-title">スコアの修正</div>
+      <div id="editSkittleGrid" class="skittle-grid" style="transform: scale(0.85); margin: 0 auto;">
+        <!-- JS動的生成 -->
+      </div>
+      <div style="font-size: 0.8rem; font-weight: bold; color: #b45309; margin-bottom: 12px;">
+        修正後の点数: <span id="editPreviewScore">+0</span> 点
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+        <button class="btn btn-miss" onclick="saveCellEdit(true)">ミス(0点)に</button>
+        <button class="btn btn-submit" onclick="saveCellEdit(false)">決定</button>
+      </div>
+      <button class="btn btn-clear" style="width: 100%;" onclick="deleteCellEntry()">この投球を削除</button>
+    </div>
+  </div>
+
+
+  <!-- アプリケーション・ロジック -->
+  <script>
+    // --- ローカルストレージ キー ---
+    const STORAGE_KEY_SETTINGS = 'molkky_settings';
+    const STORAGE_KEY_MEMBERS = 'molkky_members';
+    const STORAGE_KEY_GAME_STATE = 'molkky_game_state';
+    const STORAGE_KEY_RECORDS = 'molkky_game_records';
+
+    // --- デフォルト値 ---
+    const DEFAULT_SETTINGS = {
+      targetScore: 50,
+      burstReturnScore: 25,
+      maxConsecutiveMisses: 3
+    };
+
+    const DEFAULT_MEMBERS = [
+      { id: '1', name: 'プレイヤー1' },
+      { id: '2', name: 'プレイヤー2' },
+      { id: '3', name: 'プレイヤー3' }
+    ];
+
+    // --- アプリ状態 ---
+    let settings = loadFromStorage(STORAGE_KEY_SETTINGS, DEFAULT_SETTINGS);
+    let members = loadFromStorage(STORAGE_KEY_MEMBERS, DEFAULT_MEMBERS);
+    
+    const savedGameState = loadFromStorage(STORAGE_KEY_GAME_STATE, null);
+    let currentGameId = savedGameState ? (savedGameState.currentGameId || Date.now().toString()) : Date.now().toString();
+    let activePlayerIds = savedGameState ? savedGameState.activePlayerIds : ['1', '2', '3'];
+    let currentTurnIndex = savedGameState ? savedGameState.currentTurnIndex : 0;
+    let history = savedGameState ? savedGameState.history : []; // [{ playerId, skittles: [], isMiss: boolean }]
+    
+    let gameRecords = loadFromStorage(STORAGE_KEY_RECORDS, []);
+
+    let selectedSkittles = [];
+    let editingHistoryIndex = -1;
+    let editSkittles = [];
+
+    // --- ストレージヘルパー ---
+    function loadFromStorage(key, fallback) {
+      try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
+
+    function saveToStorage(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.error('Storage error', e);
+      }
+    }
+
+    function saveCurrentGameState() {
+      saveToStorage(STORAGE_KEY_GAME_STATE, {
+        currentGameId,
+        activePlayerIds,
+        currentTurnIndex,
+        history
+      });
+    }
+
+    // --- 初期化 ---
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('inputTargetScore').value = settings.targetScore;
+      document.getElementById('inputBurstReturn').value = settings.burstReturnScore;
+      document.getElementById('inputMaxMisses').value = settings.maxConsecutiveMisses;
+      
+      renderAll();
+    });
+
+    // --- スコア計算 ---
+    function calculateGameState() {
+      const playerStats = activePlayerIds.map(id => {
+        const m = members.find(mem => mem.id === id);
+        return {
+          id,
+          name: m ? m.name : 'Unknown',
+          score: 0,
+          consecutiveMisses: 0,
+          status: 'playing',
+          finishRank: null,
+          turns: []
+        };
+      });
+
+      let finishedRankCounter = 0;
+
+      history.forEach((entry, hIdx) => {
+        const player = playerStats.find(p => p.id === entry.playerId);
+        if (!player || player.status !== 'playing') return;
+
+        let turnScore = 0;
+        let isMiss = false;
+
+        if (entry.isMiss || !entry.skittles || entry.skittles.length === 0) {
+          isMiss = true;
+          turnScore = 0;
+          player.consecutiveMisses += 1;
+        } else {
+          isMiss = false;
+          player.consecutiveMisses = 0;
+          turnScore = (entry.skittles.length === 1) ? entry.skittles[0] : entry.skittles.length;
+        }
+
+        let newScore = player.score + turnScore;
+
+        if (newScore > settings.targetScore) {
+          newScore = settings.burstReturnScore;
+        }
+
+        player.score = newScore;
+
+        if (player.score === settings.targetScore) {
+          player.status = 'finished';
+          finishedRankCounter += 1;
+          player.finishRank = finishedRankCounter;
+        }
+
+        if (player.consecutiveMisses >= settings.maxConsecutiveMisses && player.status === 'playing') {
+          player.status = 'disqualified';
+        }
+
+        player.turns.push({
+          historyIndex: hIdx,
+          score: turnScore,
+          isMiss,
+          totalAfter: player.score
+        });
+      });
+
+      return playerStats;
+    }
+
+    function getNextValidPlayerIndex(startIndex, playerStats) {
+      const total = activePlayerIds.length;
+      if (total === 0) return 0;
+
+      let curr = startIndex % total;
+      for (let i = 0; i < total; i++) {
+        const pId = activePlayerIds[curr];
+        const pStat = playerStats.find(p => p.id === pId);
+        if (pStat && pStat.status === 'playing') {
+          return curr;
+        }
+        curr = (curr + 1) % total;
+      }
+      return startIndex % total;
+    }
+
+    // --- レンダリング・UI更新 ---
+    function renderAll() {
+      const playerStats = calculateGameState();
+
+      // 全員終了チェック
+      const playingPlayers = playerStats.filter(p => p.status === 'playing');
+      if (playingPlayers.length === 0 && activePlayerIds.length > 0 && history.length > 0) {
+        showGameOverDialog(playerStats);
+      } else {
+        currentTurnIndex = getNextValidPlayerIndex(currentTurnIndex, playerStats);
+      }
+
+      saveCurrentGameState();
+
+      // 現在のターンプレイヤーUI更新
+      const currPId = activePlayerIds[currentTurnIndex];
+      const currStat = playerStats.find(p => p.id === currPId) || { name: 'なし', score: 0, consecutiveMisses: 0 };
+      
+      document.getElementById('turnBadge').innerText = `投球者 #${currentTurnIndex + 1}`;
+      document.getElementById('missBadge').innerText = `ミス: ${currStat.consecutiveMisses}/${settings.maxConsecutiveMisses}`;
+      document.getElementById('currentPlayerName').innerText = currStat.name;
+      document.getElementById('currentScore').innerText = currStat.score;
+      document.getElementById('remainPoints').innerText = Math.max(0, settings.targetScore - currStat.score);
+      document.getElementById('targetScoreDisplay').innerText = settings.targetScore;
+
+      // プレビュー表示
+      let previewVal = 0;
+      if (selectedSkittles.length === 1) previewVal = selectedSkittles[0];
+      else if (selectedSkittles.length > 1) previewVal = selectedSkittles.length;
+      document.getElementById('previewScore').innerText = `+${previewVal}`;
+
+      document.getElementById('btnClear').disabled = selectedSkittles.length === 0;
+      document.getElementById('btnSubmit').disabled = selectedSkittles.length === 0;
+
+      // スキットル選択状態
+      document.querySelectorAll('#skittleGrid .skittle-btn').forEach(btn => {
+        const val = parseInt(btn.innerText);
+        if (selectedSkittles.includes(val)) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+
+      renderScorecard(playerStats);
+    }
+
+    function renderScorecard(playerStats) {
+      let maxTurns = 5;
+      playerStats.forEach(p => {
+        if (p.turns.length > maxTurns) maxTurns = p.turns.length;
+      });
+
+      let thHTML = '<th class="sticky-col">プレイヤー</th>';
+      for (let i = 1; i <= maxTurns; i++) {
+        thHTML += `<th>${i}</th>`;
+      }
+      thHTML += '<th>合計</th><th>残り</th>';
+      document.getElementById('tableHeader').innerHTML = thHTML;
+
+      let tbHTML = '';
+      activePlayerIds.forEach((pId, idx) => {
+        const pStat = playerStats.find(p => p.id === pId);
+        if (!pStat) return;
+
+        const isActive = (idx === currentTurnIndex && pStat.status === 'playing');
+        let rowHTML = `<tr class="${isActive ? 'active-row' : ''}">`;
+        
+        let statusTag = '';
+        if (pStat.status === 'finished') statusTag = ` <span style="color:#059669;">(🏆${pStat.finishRank}位)</span>`;
+        if (pStat.status === 'disqualified') statusTag = ` <span style="color:#e11d48;">(失格)</span>`;
+
+        rowHTML += `<td class="sticky-col" onclick="selectTurnPlayer(${idx})">${pStat.name}${statusTag}</td>`;
+
+        for (let t = 0; t < maxTurns; t++) {
+          const turnData = pStat.turns[t];
+          if (turnData) {
+            const cellClass = turnData.isMiss ? 'cell-clickable cell-miss' : 'cell-clickable';
+            const cellText = turnData.isMiss ? 'F' : `+${turnData.score}`;
+            rowHTML += `<td class="${cellClass}" onclick="openEditCellModal(${turnData.historyIndex})">${cellText}</td>`;
+          } else {
+            rowHTML += `<td style="color:#e7e5e4;">-</td>`;
+          }
+        }
+
+        rowHTML += `<td class="total-cell">${pStat.score}</td>`;
+        rowHTML += `<td class="remain-cell">${pStat.status === 'finished' ? '0' : Math.max(0, settings.targetScore - pStat.score)}</td>`;
+        rowHTML += '</tr>';
+
+        tbHTML += rowHTML;
+      });
+
+      document.getElementById('tableBody').innerHTML = tbHTML;
+    }
+
+    // --- ピン選択操作 ---
+    function toggleSkittle(num) {
+      if (selectedSkittles.includes(num)) {
+        selectedSkittles = selectedSkittles.filter(n => n !== num);
+      } else {
+        selectedSkittles.push(num);
+      }
+      renderAll();
+    }
+
+    function clearSkittles() {
+      selectedSkittles = [];
+      renderAll();
+    }
+
+    // --- 投球確定 ---
+    function submitTurn(isMiss) {
+      const playerStats = calculateGameState();
+      const currPId = activePlayerIds[currentTurnIndex];
+      const currStat = playerStats.find(p => p.id === currPId);
+
+      if (!currStat || currStat.status !== 'playing') return;
+
+      const skittles = isMiss ? [] : [...selectedSkittles];
+      const addedScore = isMiss ? 0 : (skittles.length === 1 ? skittles[0] : skittles.length);
+
+      const nextScore = currStat.score + addedScore;
+      const nextMisses = isMiss ? currStat.consecutiveMisses + 1 : 0;
+
+      if (!isMiss && nextScore > settings.targetScore) {
+        showAlertDialog('💥', 'BURST!', `${currStat.name} さんの得点が ${settings.targetScore} 点を超えたため、${settings.burstReturnScore} 点に戻ります。`);
+      } else if (!isMiss && nextScore === settings.targetScore) {
+        showAlertDialog('🏆', 'VICTORY!', `${currStat.name} さんが ${settings.targetScore} 点ピッタリでゴールしました！`);
+      } else if (isMiss && nextMisses >= settings.maxConsecutiveMisses) {
+        showAlertDialog('❌', 'DISQUALIFIED', `${currStat.name} さんは ${settings.maxConsecutiveMisses} 回連続ミスのため失格となります。`);
+      } else {
+        if (isMiss) showToast(`${currStat.name}: ミス (${nextMisses}/${settings.maxConsecutiveMisses})`);
+        else showToast(`${currStat.name}: +${addedScore}点`);
+      }
+
+      history.push({
+        playerId: currPId,
+        skittles,
+        isMiss
+      });
+
+      selectedSkittles = [];
+      currentTurnIndex = (currentTurnIndex + 1) % activePlayerIds.length;
+      renderAll();
+    }
+
+    function selectTurnPlayer(idx) {
+      const playerStats = calculateGameState();
+      const pId = activePlayerIds[idx];
+      const pStat = playerStats.find(p => p.id === pId);
+      if (pStat && pStat.status === 'playing') {
+        currentTurnIndex = idx;
+        renderAll();
+        showToast(`${pStat.name} さんのターンになりました`);
+      }
+    }
+
+    // --- セル修正モーダル ---
+    function openEditCellModal(historyIndex) {
+      editingHistoryIndex = historyIndex;
+      const entry = history[historyIndex];
+      if (!entry) return;
+
+      editSkittles = entry.isMiss ? [] : [...entry.skittles];
+      renderEditSkittleGrid();
+      openModal('editCellModal');
+    }
+
+    function renderEditSkittleGrid() {
+      const layout = [[7,8,9],[5,11,12,6],[3,10,4],[1,2]];
+      let html = '';
+      layout.forEach(row => {
+        html += '<div class="skittle-row">';
+        row.forEach(num => {
+          const isSel = editSkittles.includes(num);
+          html += `<button class="skittle-btn ${isSel ? 'selected' : ''}" onclick="toggleEditSkittle(${num})">${num}</button>`;
+        });
+        html += '</div>';
+      });
+      document.getElementById('editSkittleGrid').innerHTML = html;
+
+      let score = 0;
+      if (editSkittles.length === 1) score = editSkittles[0];
+      else if (editSkittles.length > 1) score = editSkittles.length;
+      document.getElementById('editPreviewScore').innerText = `+${score}`;
+    }
+
+    function toggleEditSkittle(num) {
+      if (editSkittles.includes(num)) {
+        editSkittles = editSkittles.filter(n => n !== num);
+      } else {
+        editSkittles.push(num);
+      }
+      renderEditSkittleGrid();
+    }
+
+    function saveCellEdit(isMiss) {
+      if (editingHistoryIndex < 0) return;
+      history[editingHistoryIndex].skittles = isMiss ? [] : [...editSkittles];
+      history[editingHistoryIndex].isMiss = isMiss;
+      closeModal('editCellModal');
+      renderAll();
+      showToast('スコアを修正しました');
+    }
+
+    function deleteCellEntry() {
+      if (editingHistoryIndex < 0) return;
+      history.splice(editingHistoryIndex, 1);
+      closeModal('editCellModal');
+      renderAll();
+      showToast('投球データを削除しました');
+    }
+
+    // --- メンバー管理 ---
+    function renderMemberList() {
+      let html = '';
+      members.forEach(m => {
+        const isActive = activePlayerIds.includes(m.id);
+        const orderIdx = activePlayerIds.indexOf(m.id);
+
+        html += `
+          <div class="member-item">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleMemberActive('${m.id}')">
+              <span style="font-size:0.85rem; font-weight:bold;">${m.name}</span>
+            </div>
+            ${isActive ? `
+              <div style="display:flex; align-items:center; gap:4px;">
+                <span style="font-size:0.75rem; font-weight:bold; color:#b45309;">#${orderIdx + 1}</span>
+                <button onclick="moveOrder(${orderIdx}, -1)" ${orderIdx === 0 ? 'disabled' : ''} style="border:none; background:none; cursor:pointer;">▲</button>
+                <button onclick="moveOrder(${orderIdx}, 1)" ${orderIdx === activePlayerIds.length - 1 ? 'disabled' : ''} style="border:none; background:none; cursor:pointer;">▼</button>
+                <button onclick="deleteMemberMaster('${m.id}')" style="border:none; background:none; cursor:pointer; font-size:0.8rem; margin-left:4px;">🗑️</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      document.getElementById('memberList').innerHTML = html;
+    }
+
+    function addMember() {
+      const input = document.getElementById('newMemberName');
+      const name = input.value.trim();
+      if (!name) return;
+      const newId = Date.now().toString();
+      members.push({ id: newId, name });
+      activePlayerIds.push(newId);
+      input.value = '';
+      saveToStorage(STORAGE_KEY_MEMBERS, members);
+      renderMemberList();
+    }
+
+    function toggleMemberActive(id) {
+      if (activePlayerIds.includes(id)) {
+        if (activePlayerIds.length <= 2) {
+          showToast('最低2名必要です');
+          renderMemberList();
+          return;
+        }
+        activePlayerIds = activePlayerIds.filter(pId => pId !== id);
+      } else {
+        activePlayerIds.push(id);
+      }
+      renderMemberList();
+    }
+
+    function moveOrder(index, dir) {
+      const target = index + dir;
+      if (target < 0 || target >= activePlayerIds.length) return;
+      const temp = activePlayerIds[index];
+      activePlayerIds[index] = activePlayerIds[target];
+      activePlayerIds[target] = temp;
+      renderMemberList();
+    }
+
+    function shuffleOrder() {
+      activePlayerIds.sort(() => Math.random() - 0.5);
+      renderMemberList();
+      showToast('投球順をシャッフルしました');
+    }
+
+    function deleteMemberMaster(id) {
+      members = members.filter(m => m.id !== id);
+      activePlayerIds = activePlayerIds.filter(pId => pId !== id);
+      saveToStorage(STORAGE_KEY_MEMBERS, members);
+      renderMemberList();
+    }
+
+    function applyMemberChanges() {
+      currentGameId = Date.now().toString(); // 新しいゲームIDを発行
+      history = [];
+      currentTurnIndex = 0;
+      selectedSkittles = [];
+      closeModal('membersModal');
+      renderAll();
+      showToast('新しいゲームを開始しました');
+    }
+
+    // --- ルール設定 ---
+    function saveSettings() {
+      settings.targetScore = parseInt(document.getElementById('inputTargetScore').value) || 50;
+      settings.burstReturnScore = parseInt(document.getElementById('inputBurstReturn').value) || 25;
+      settings.maxConsecutiveMisses = parseInt(document.getElementById('inputMaxMisses').value) || 3;
+      
+      saveToStorage(STORAGE_KEY_SETTINGS, settings);
+      closeModal('settingsModal');
+      renderAll();
+      showToast('ルール設定を保存しました');
+    }
+
+    // --- 過去対戦記録機能 ---
+    function renderGameRecords() {
+      const listEl = document.getElementById('recordsList');
+      if (gameRecords.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; color:#78716c; font-size:0.8rem; padding:20px;">過去の対戦結果はありません</div>';
+        return;
+      }
+
+      let html = '';
+      gameRecords.forEach((rec, recIdx) => {
+        let maxTurns = 5;
+        if (rec.playerStats) {
+          rec.playerStats.forEach(p => {
+            if (p.turns && p.turns.length > maxTurns) maxTurns = p.turns.length;
+          });
+        }
+
+        html += `
+          <div class="history-card">
+            <div class="history-card-header">
+              <span>📅 ${rec.date}</span>
+              <button class="history-scorecard-toggle" onclick="toggleScorecardView(${recIdx})">
+                ${rec.showScorecard ? '閉じる ▲' : 'スコアカード表示 ▼'}
+              </button>
+            </div>
+            
+            <div style="margin-bottom:6px;">
+              ${rec.rankings.map(r => `
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:2px;">
+                  <span><strong>${r.rank}</strong>: ${r.name}</span>
+                  <span><strong>${r.score}点</strong> ${r.status === 'disqualified' ? '(失格)' : ''}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            ${rec.showScorecard && rec.playerStats ? `
+              <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #d6d3d1;">
+                <div class="table-wrapper" style="margin-bottom:6px;">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="sticky-col">名前</th>
+                        ${Array.from({length: maxTurns}).map((_, i) => `<th>${i+1}</th>`).join('')}
+                        <th>合計</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${rec.playerStats.map(p => `
+                        <tr>
+                          <td class="sticky-col">${p.name}</td>
+                          ${Array.from({length: maxTurns}).map((_, tIdx) => {
+                            const turn = p.turns ? p.turns[tIdx] : null;
+                            if (turn) {
+                              return `<td class="${turn.isMiss ? 'cell-miss' : ''}">${turn.isMiss ? 'F' : '+' + turn.score}</td>`;
+                            }
+                            return `<td style="color:#e7e5e4;">-</td>`;
+                          }).join('')}
+                          <td class="total-cell">${p.score}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:6px;">
+                  <button class="btn-small" onclick="downloadRecordScorecard(${recIdx}, 'image')">🖼️ 画像保存</button>
+                  <button class="btn-small" onclick="downloadRecordScorecard(${recIdx}, 'csv')">📄 CSV保存</button>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      });
+      listEl.innerHTML = html;
+    }
+
+    function toggleScorecardView(index) {
+      gameRecords[index].showScorecard = !gameRecords[index].showScorecard;
+      renderGameRecords();
+    }
+
+    function clearGameRecords() {
+      if (confirm('過去の対戦履歴を全て削除しますか？')) {
+        gameRecords = [];
+        saveToStorage(STORAGE_KEY_RECORDS, []);
+        renderGameRecords();
+        showToast('過去の履歴を消去しました');
+      }
+    }
+
+    // --- ダウンロード処理 (画像/CSV) ---
+    function downloadCurrentScorecard(format) {
+      const playerStats = calculateGameState();
+      const title = `モルック対戦成績 (${new Date().toLocaleDateString('ja-JP')})`;
+      if (format === 'csv') {
+        exportToCSV(playerStats, title);
+      } else {
+        exportToImage(playerStats, title);
+      }
+    }
+
+    function downloadRecordScorecard(recIdx, format) {
+      const rec = gameRecords[recIdx];
+      if (!rec || !rec.playerStats) return;
+      const title = `モルック対戦成績 (${rec.date})`;
+      if (format === 'csv') {
+        exportToCSV(rec.playerStats, title);
+      } else {
+        exportToImage(rec.playerStats, title);
+      }
+    }
+
+    // CSVダウンロード実装
+    function exportToCSV(playerStats, title) {
+      let maxTurns = 5;
+      playerStats.forEach(p => {
+        if (p.turns && p.turns.length > maxTurns) maxTurns = p.turns.length;
+      });
+
+      let csvStr = '\uFEFF'; // UTF-8 BOM
+      csvStr += `"${title}"\n\n`;
+
+      let header = ['"プレイヤー"'];
+      for (let i = 1; i <= maxTurns; i++) header.push(`"${i}投目"`);
+      header.push('"合計点"', '"残り"');
+      csvStr += header.join(',') + '\n';
+
+      playerStats.forEach(p => {
+        let row = [`"${p.name}"`];
+        for (let t = 0; t < maxTurns; t++) {
+          const turn = p.turns ? p.turns[t] : null;
+          if (turn) {
+            row.push(turn.isMiss ? '"F (0)"' : `"${turn.score}"`);
+          } else {
+            row.push('""');
+          }
+        }
+        row.push(`"${p.score}"`);
+        row.push(`"${p.status === 'finished' ? 0 : Math.max(0, settings.targetScore - p.score)}"`);
+        csvStr += row.join(',') + '\n';
+      });
+
+      const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `molkky_scorecard_${Date.now()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSVファイルをダウンロードしました');
+    }
+
+    // 画像 (PNG) 生成＆モーダルプレビュー表示実装
+    function exportToImage(playerStats, title) {
+      let maxTurns = 5;
+      playerStats.forEach(p => {
+        if (p.turns && p.turns.length > maxTurns) maxTurns = p.turns.length;
+      });
+
+      const cellWidth = 44;
+      const nameWidth = 110;
+      const totalWidth = 50;
+      const rowHeight = 36;
+      const headerHeight = 70;
+      const padding = 20;
+
+      const canvasWidth = padding * 2 + nameWidth + (maxTurns * cellWidth) + totalWidth;
+      const canvasHeight = padding * 2 + headerHeight + (playerStats.length * rowHeight);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+      const ctx = canvas.getContext('2d');
+
+      // 背景
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      // タイトルヘッダー
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(padding, padding, canvasWidth - padding * 2, 40);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`🪵 ${title}`, padding + 12, padding + 26);
+
+      const startX = padding;
+      const startY = padding + 50;
+
+      // ヘッダー背景
+      ctx.fillStyle = '#f5f5f4';
+      ctx.fillRect(startX, startY, canvasWidth - padding * 2, rowHeight);
+
+      ctx.strokeStyle = '#d6d3d1';
+      ctx.lineWidth = 1;
+
+      // ヘッダーテキスト
+      ctx.fillStyle = '#44403c';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      
+      ctx.fillText('プレイヤー', startX + nameWidth / 2, startY + 22);
+      for (let i = 0; i < maxTurns; i++) {
+        ctx.fillText(`${i + 1}`, startX + nameWidth + (i * cellWidth) + cellWidth / 2, startY + 22);
+      }
+      ctx.fillText('合計', startX + nameWidth + (maxTurns * cellWidth) + totalWidth / 2, startY + 22);
+
+      ctx.strokeRect(startX, startY, canvasWidth - padding * 2, rowHeight);
+
+      // 行データ描画
+      playerStats.forEach((p, rIdx) => {
+        const currY = startY + (rIdx + 1) * rowHeight;
+
+        ctx.fillStyle = rIdx % 2 === 0 ? '#ffffff' : '#fafaf9';
+        ctx.fillRect(startX, currY, canvasWidth - padding * 2, rowHeight);
+        ctx.strokeRect(startX, currY, canvasWidth - padding * 2, rowHeight);
+
+        ctx.fillStyle = '#1c1917';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        const nameText = p.name + (p.finishRank ? ` (🏆${p.finishRank}位)` : '');
+        ctx.fillText(nameText, startX + 8, currY + 22);
+
+        ctx.beginPath();
+        ctx.moveTo(startX + nameWidth, currY);
+        ctx.lineTo(startX + nameWidth, currY + rowHeight);
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        for (let t = 0; t < maxTurns; t++) {
+          const turn = p.turns ? p.turns[t] : null;
+          const posX = startX + nameWidth + (t * cellWidth);
+          
+          if (turn) {
+            if (turn.isMiss) {
+              ctx.fillStyle = '#e11d48';
+              ctx.fillText('F', posX + cellWidth / 2, currY + 22);
+            } else {
+              ctx.fillStyle = '#292524';
+              ctx.fillText(`+${turn.score}`, posX + cellWidth / 2, currY + 22);
+            }
+          } else {
+            ctx.fillStyle = '#d6d3d1';
+            ctx.fillText('-', posX + cellWidth / 2, currY + 22);
+          }
+
+          ctx.beginPath();
+          ctx.moveTo(posX + cellWidth, currY);
+          ctx.lineTo(posX + cellWidth, currY + rowHeight);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillRect(startX + nameWidth + (maxTurns * cellWidth), currY, totalWidth, rowHeight);
+        ctx.fillStyle = '#78350f';
+        ctx.font = 'black 13px sans-serif';
+        ctx.fillText(`${p.score}`, startX + nameWidth + (maxTurns * cellWidth) + totalWidth / 2, currY + 22);
+
+        ctx.strokeRect(startX + nameWidth + (maxTurns * cellWidth), currY, totalWidth, rowHeight);
+      });
+
+      // Data URL化してプレビューモーダルに表示
+      const imageURI = canvas.toDataURL('image/png');
+      document.getElementById('previewImageTag').src = imageURI;
+      
+      const directBtn = document.getElementById('directDownloadLink');
+      directBtn.href = imageURI;
+      directBtn.download = `molkky_scorecard_${Date.now()}.png`;
+
+      openModal('imagePreviewModal');
+
+      // PC向けに自動ダウンロードも念のためトリガー
+      try {
+        const link = document.createElement('a');
+        link.download = `molkky_scorecard_${Date.now()}.png`;
+        link.href = imageURI;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        console.log('Direct download failed, modal used instead.', e);
+      }
+    }
+
+    // --- ダイアログ & モーダルヘルパー ---
+    function openModal(id) {
+      if (id === 'membersModal') renderMemberList();
+      if (id === 'recordsModal') renderGameRecords();
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function showAlertDialog(emoji, title, msg) {
+      document.getElementById('alertEmoji').innerText = emoji;
+      document.getElementById('alertTitle').innerText = title;
+      document.getElementById('alertMsg').innerText = msg;
+      openModal('alertDialog');
+    }
+
+    function showGameOverDialog(playerStats) {
+      const sorted = [...playerStats].sort((a, b) => {
+        if (a.finishRank && b.finishRank) return a.finishRank - b.finishRank;
+        if (a.finishRank) return -1;
+        if (b.finishRank) return 1;
+        return b.score - a.score;
+      });
+
+      const rankings = sorted.map((p, i) => ({
+        rank: p.finishRank ? `${p.finishRank}位` : `${i + 1}位`,
+        name: p.name,
+        score: p.score,
+        status: p.status
+      }));
+
+      // 重複チェック＆ゲームIDによる上書き・新規保存制御
+      const existingIdx = gameRecords.findIndex(r => r.gameId === currentGameId);
+      const recordData = {
+        gameId: currentGameId,
+        date: new Date().toLocaleString('ja-JP'),
+        rankings,
+        playerStats: JSON.parse(JSON.stringify(playerStats)),
+        showScorecard: false
+      };
+
+      if (existingIdx >= 0) {
+        // 修正等で同じゲームの再計算が行われた場合は上書き
+        gameRecords[existingIdx] = recordData;
+      } else {
+        // 新しいゲーム結果は先頭に追加
+        gameRecords.unshift(recordData);
+      }
+      
+      saveToStorage(STORAGE_KEY_RECORDS, gameRecords);
+
+      let rankingText = rankings.map(r => `${r.rank}: ${r.name} (${r.score}点)`).join('\n');
+      showAlertDialog('🎉', 'GAME OVER', `全員のプレイが終了しました！\n\n【最終結果（履歴にセーブされました）】\n${rankingText}`);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
+
